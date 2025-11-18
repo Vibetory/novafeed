@@ -1,22 +1,36 @@
-
 {% extends 'base.html' %}
 
 {% block content %}
-    <div class="articles">
-        {% for article in articles %}
-            <article>
-                <h2><a href="{{ article[1].link }}">{{ article[1].title }}</a></h2>
-                <p>{{ article[1].published }}</p>
-                <p>Source: {{ article[0] }}</p>
-            </article>
-        {% endfor %}
-    </div>
-    <div class="pagination">
-        {% if page > 1 %}
-            <a href="{{ url_for('index', page=page-1) }}">Previous</a>
-        {% endif %}
-        {% if page < total_pages %}
-            <a href="{{ url_for('index', page=page+1) }}">Next</a>
-        {% endif %}
-    </div>
+<div class="articles">
+    {% for article in articles %}
+        <article>
+
+            {% if article.image_url %}
+                <div class="article-image">
+                    <img src="{{ article.image_url }}" alt="Image article">
+                </div>
+            {% endif %}
+
+            <h2>
+                <a href="{{ article.link }}" target="_blank">
+                    {{ article.title }}
+                </a>
+            </h2>
+
+            <p class="date">{{ article.published }}</p>
+            <p class="source">Source : {{ article.source }} — Thème : {{ article.theme }}</p>
+
+            <p class="summary">
+                {{ article.summary }}
+            </p>
+
+            <p class="ranking">
+                ★ Source : {{ article.source_ranking }}  
+                — ★ Article : {{ article.article_ranking }}  
+                — Par : {{ article.ranking_author }}
+            </p>
+
+        </article>
+    {% endfor %}
+</div>
 {% endblock %}

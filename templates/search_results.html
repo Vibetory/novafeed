@@ -1,14 +1,32 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h2 class="search-title" >Search Results For: {{ query }}</h2>
+    <h2 class="search-title">Search Results For: {{ query }}</h2>
+
     <div class="articles">
         {% for article in articles %}
+
             <article>
-                <h2><a href="{{ article[1].link }}">{{ article[1].title }}</a></h2>
-                <p>{{ article[1].published }}</p>
-                <p>Source: {{ article[0] }}</p>
+
+                {% if article.image_url %}
+                    <div class="article-image">
+                        <img src="{{ article.image_url }}" alt="image">
+                    </div>
+                {% endif %}
+
+                <h2>
+                    <a href="{{ article.link }}" target="_blank">
+                        {{ article.title }}
+                    </a>
+                </h2>
+
+                <p class="date">{{ article.published }}</p>
+                <p class="source">Source: {{ article.source }} — Thème : {{ article.theme }}</p>
+
+                <p class="summary">{{ article.summary }}</p>
+
             </article>
+
         {% endfor %}
     </div>
 {% endblock %}

@@ -167,6 +167,21 @@ article .date {
     font-size: 0.9em;
 }
 
+.article-image {
+    margin-bottom: 15px;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 6px;
+}
+
+.article-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
 /* ------------------------------
    PAGINATION
 ---------------------------------- */

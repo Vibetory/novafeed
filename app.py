@@ -2,6 +2,7 @@ import csv
 import datetime
 import feedparser
 from flask import Flask, render_template, request
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
@@ -9,28 +10,145 @@ app = Flask(__name__)
 # 1) FEEDS avec thème + ranking
 # -----------------------------
 RSS_FEEDS = {
-    "IEEE IoT Journal": {
-        "url": "https://ieeexplore.ieee.org/rss/TOC84.XML",
+    # -----------------------
+    # IoT + Smart Buildings
+    # -----------------------
+    "ArchDaily": {
+        "url": "https://www.archdaily.com/rss",
         "theme": "IoT",
         "ranking": 5,
         "ranking_author": "Valentin"
     },
-    "TechCrunch IoT": {
-        "url": "https://techcrunch.com/tag/iot/feed/",
+    "Dezeen": {
+        "url": "https://www.dezeen.com/feed/",
+        "theme": "IoT",
+        "ranking": 5,
+        "ranking_author": "Valentin"
+    },
+    "AEC Magazine": {
+        "url": "https://aecmag.com/feed/",
         "theme": "IoT",
         "ranking": 4,
         "ranking_author": "Valentin"
     },
-    "5G Americas": {
-        "url": "https://www.5gamericas.org/feed/",
+    "Smart Buildings Magazine": {
+        "url": "https://smartbuildingsmagazine.com/feed",
+        "theme": "IoT",
+        "ranking": 4,
+        "ranking_author": "Valentin"
+    },
+    "IoT Business News": {
+        "url": "https://iotbusinessnews.com/feed/",
+        "theme": "IoT",
+        "ranking": 5,
+        "ranking_author": "Valentin"
+    },
+    "IoT Now": {
+        "url": "https://www.iot-now.com/feed",
+        "theme": "IoT",
+        "ranking": 3,
+        "ranking_author": "Valentin"
+    },
+    "BuiltWorlds": {
+        "url": "https://builtworlds.com/feed/",
+        "theme": "IoT",
+        "ranking": 4,
+        "ranking_author": "Valentin"
+    },
+    "Smart City Dive": {
+        "url": "https://www.smartcitiesdive.com/feeds/news/",
+        "theme": "IoT",
+        "ranking": 3,
+        "ranking_author": "Valentin"
+    },
+
+    # -----------------------
+    # 5G
+    # -----------------------
+    "5G.co.uk": {
+        "url": "https://www.5g.co.uk/feeds/all/",
         "theme": "5G",
         "ranking": 4,
         "ranking_author": "Valentin"
     },
-    "Architecture 2030 – Climate Action": {
-        "url": "https://architecture2030.org/feed/",
+    "TelecomTV": {
+        "url": "https://www.telecomtv.com/rss",
+        "theme": "5G",
+        "ranking": 3,
+        "ranking_author": "Valentin"
+    },
+    "Ericsson Blog": {
+        "url": "https://www.ericsson.com/en/rss-feeds",
+        "theme": "5G",
+        "ranking": 4,
+        "ranking_author": "Valentin"
+    },
+    "Nokia Network Insights": {
+        "url": "https://www.nokia.com/about-us/newsroom/rss-feeds/rss-xml-feeds/",
+        "theme": "5G",
+        "ranking": 3,
+        "ranking_author": "Valentin"
+    },
+
+    # -----------------------
+    # Carbone / Green IT
+    # -----------------------
+    "CleanTechnica": {
+        "url": "https://cleantechnica.com/feed/",
         "theme": "Carbone",
         "ranking": 5,
+        "ranking_author": "Valentin"
+    },
+    "Inhabitat": {
+        "url": "https://inhabitat.com/feed/",
+        "theme": "Carbone",
+        "ranking": 4,
+        "ranking_author": "Valentin"
+    },
+    "GreenBiz": {
+        "url": "https://www.greenbiz.com/rss.xml",
+        "theme": "Carbone",
+        "ranking": 4,
+        "ranking_author": "Valentin"
+    },
+    "BuildingGreen": {
+        "url": "https://www.buildinggreen.com/rss.xml",
+        "theme": "Carbone",
+        "ranking": 5,
+        "ranking_author": "Valentin"
+    },
+    "Carbon Herald": {
+        "url": "https://carbonherald.com/feed/",
+        "theme": "Carbone",
+        "ranking": 3,
+        "ranking_author": "Valentin"
+    },
+    "Renewable Energy World": {
+        "url": "https://www.renewableenergyworld.com/feed/",
+        "theme": "Carbone",
+        "ranking": 4,
+        "ranking_author": "Valentin"
+    },
+
+    # -----------------------
+    # Personnalités
+    # -----------------------
+    "Carlo Ratti": {
+        "url": "https://nitter.net/carloratti/rss",
+        "theme": "IoT",
+        "ranking": 5,
+        "ranking_author": "Valentin"
+    },
+    "Norman Foster Foundation": {
+        "url": "https://www.normanfosterfoundation.org/feed/",
+        "theme": "Architecture",
+        "ranking": 4,
+        "ranking_author": "Valentin"
+    },
+    "Thomas Heatherwick": {
+        "url": "https://www.heatherwick.com/feed/",
+        "theme": "Architecture",
+        "ranking": 3,
         "ranking_author": "Valentin"
     }
 }
@@ -38,6 +156,24 @@ RSS_FEEDS = {
 # -----------------------------
 # 2) Extraction image RSS
 # -----------------------------
+
+def clean_summary(raw_html, max_length=250):
+    if not raw_html:
+        return ""
+
+    # Convertir HTML -> texte
+    text = BeautifulSoup(raw_html, "html.parser").get_text(separator=" ")
+
+    # Nettoyer les espaces multiples
+    text = " ".join(text.split())
+
+    # Tronquer si trop long
+    if len(text) > max_length:
+        text = text[:max_length].rstrip() + "…"
+
+    return text
+
+
 def extract_image(entry):
     media = getattr(entry, "media_content", None)
     if media and len(media) > 0 and "url" in media[0]:
@@ -86,8 +222,9 @@ def index():
     for source, meta in RSS_FEEDS.items():
         parsed_feed = feedparser.parse(meta["url"])
 
-        for entry in parsed_feed.entries:
-            summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
+        for entry in parsed_feed.entries:   
+            raw_summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
+            summary = clean_summary(raw_summary)
             image_url = extract_image(entry)
 
             article = {

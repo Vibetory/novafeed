@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Gestion des sources RSS</h2>
+
+<a href="/sources/new" class="btn-create">Ajouter une nouvelle source</a>
+
+<table class="sources-table">
+    <tr>
+        <th>Nom</th>
+        <th>URL</th>
+        <th>Domaines</th>
+        <th>Thèmes</th>
+        <th>Ranking</th>
+        <th>Actions</th>
+    </tr>
+
+    {% for s in sources %}
+    <tr>
+        <td>{{ s.name }}</td>
+        <td>{{ s.url }}</td>
+        <td>{{ s.domains }}</td>
+        <td>{{ s.themes }}</td>
+        <td>{{ s.source_ranking }}/5</td>
+        <td>
+            <a href="/sources/edit/{{ loop.index0 }}">Modifier</a> |
+            <a href="/sources/delete/{{ loop.index0 }}" onclick="return confirm('Supprimer ?')">Supprimer</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

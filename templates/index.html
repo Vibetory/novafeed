@@ -1,36 +1,73 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
-<div class="articles">
-    {% for article in articles %}
-        <article>
+
+<div class="articles-wrapper">
+
+    {% if errors %}
+        <div class="error-box">
+            {% for e in errors %}
+                <p>{{ e }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="card-grid">
+        {% for article in articles %}
+        <article class="card">
 
             {% if article.image_url %}
-                <div class="article-image">
-                    <img src="{{ article.image_url }}" alt="Image article">
-                </div>
+                <img class="card-img" src="{{ article.image_url }}" alt="Image de l’article">
             {% endif %}
 
-            <h2>
-                <a href="{{ article.link }}" target="_blank">
-                    {{ article.title }}
-                </a>
+            <h2 class="card-title">
+                <a href="{{ article.link }}" target="_blank">{{ article.title }}</a>
             </h2>
 
-            <p class="date">{{ article.published }}</p>
-            <p class="source">Source : {{ article.source }} — Thème : {{ article.theme }}</p>
-
-            <p class="summary">
-                {{ article.summary }}
+            <p class="card-meta">
+                <strong>Publié le :</strong> {{ article.published }}<br>
+                <strong>Chargé le :</strong> {{ article.fetched_at }}
             </p>
 
-            <p class="ranking">
-                ★ Source : {{ article.source_ranking }}  
-                — ★ Article : {{ article.article_ranking }}  
-                — Par : {{ article.ranking_author }}
+            <p><strong>Source :</strong> {{ article.source }}</p>
+            <p><strong>Domaines :</strong> {{ article.domains|join(', ') }}</p>
+            <p><strong>Thèmes :</strong> {{ article.themes|join(', ') }}</p>
+
+            <p class="card-extract">
+                <strong>Extrait :</strong>
+                {{ article.summary[:350] }}{% if article.summary|length > 350 %}…{% endif %}
+            </p>
+
+            <p>
+                <span class="rating-label">Qualité source :</span>
+                <span class="star-rating">
+                    {% for _ in range(article.source_ranking) %}★{% endfor %}
+                </span>
+            </p>
+
+            <p>
+                <span class="rating-label">Pertinence article :</span>
+                <span class="star-rating">
+                    {% for _ in range(article.article_ranking) %}★{% endfor %}
+                </span>
             </p>
 
         </article>
-    {% endfor %}
+        {% endfor %}
+    </div>
+
+    {% if total_pages and total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+            <a href="/?page={{ page - 1 }}">Précédent</a>
+        {% endif %}
+        <span>Page {{ page }} / {{ total_pages }}</span>
+        {% if page < total_pages %}
+            <a href="/?page={{ page + 1 }}">Suivant</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
 </div>
+
 {% endblock %}

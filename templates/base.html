@@ -1,19 +1,87 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Feed</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <title>News Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <header>
-        <h1>RSS Agregator</h1>
-        <form action="{{url_for('search')}}" method="GET">
-            <input type="text" name="q">
-            <input class="btn" type="submit" value="Search">
-        </form>
-    </header>
+
+<header class="main-header">
+
+    <h1 class="logo">Nova Feed</h1>
+
+    <nav class="top-nav">
+        <a href="/">Articles</a>
+        <a href="/sources">Sources RSS</a>
+        <a href="/sources/new">Ajouter une source</a>
+    </nav>
+    
+    <!-- CONTENEUR QUI CENTRE TOUT -->
+    <div class="controls-container">
+        <div class="controls-inner">
+
+            <!-- Ligne Search -->
+            <form action="{{ url_for('search') }}" method="get" class="search-bar">
+                <input type="text" name="q" placeholder="Search..."
+                       value="{{ search_query if search_query }}">
+                <button type="submit" class="btn-dark">Search</button>
+            </form>
+
+            <!-- Ligne Filtres + Refresh (alignée sur le bord gauche du champ) -->
+            <div class="filters-row">
+
+                <details class="filter-details">
+                    <summary>Filtres avancés</summary>
+                    <div class="filter-panel">
+                        <form method="get" action="{{ url_for('filter_route') }}">
+
+                            {% if domains and domains|length > 1 %}
+                                <p class="filter-title">Domaines</p>
+                                {% for d in domains %}
+                                    <label class="filter-option">
+                                        <input type="checkbox" name="domains" value="{{ d }}"
+                                               {% if selected_domains and d in selected_domains %}checked{% endif %}>
+                                        {{ d }}
+                                    </label>
+                                {% endfor %}
+                            {% elif domains %}
+                                <p class="filter-title">Domaine : {{ domains[0] }}</p>
+                            {% endif %}
+
+                            {% if themes and themes|length > 1 %}
+                                <p class="filter-title">Thèmes</p>
+                                {% for t in themes %}
+                                    <label class="filter-option">
+                                        <input type="checkbox" name="themes" value="{{ t }}"
+                                               {% if selected_themes and t in selected_themes %}checked{% endif %}>
+                                        {{ t }}
+                                    </label>
+                                {% endfor %}
+                            {% elif themes %}
+                                <p class="filter-title">Thème : {{ themes[0] }}</p>
+                            {% endif %}
+
+                            <button type="submit" class="btn-dark-small">Appliquer</button>
+                        </form>
+                    </div>
+                </details>
+
+                <a href="{{ url_for('refresh') }}" class="btn-dark refresh-btn">
+                    Recharger les articles
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+</header>
+
+<main>
     {% block content %}{% endblock %}
+</main>
+
 </body>
 </html>

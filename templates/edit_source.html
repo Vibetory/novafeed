@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>
+    {% if mode == "new" %}Ajouter une source{% else %}Modifier la source{% endif %}
+</h2>
+
+<form method="post">
+
+    <label>Nom :</label>
+    <input type="text" name="name" required value="{{ source.name if source }}">
+
+    <label>URL du flux RSS :</label>
+    <input type="text" name="url" required value="{{ source.url if source }}">
+
+    <!-- DOMAINES -->
+    <h3>Domaines</h3>
+
+    {% if domains|length == 1 %}
+        <p>Domaine automatique : <strong>{{ domains[0] }}</strong></p>
+    {% else %}
+        {% for d in domains %}
+            <label>
+                <input type="checkbox" name="domains" value="{{ d }}"
+                       {% if source and d in source.domains.split(",") %}checked{% endif %}>
+                {{ d }}
+            </label>
+        {% endfor %}
+    {% endif %}
+
+    <!-- THEMES -->
+    <h3>Thèmes</h3>
+
+    {% for t in themes %}
+        <label>
+            <input type="checkbox" name="themes" value="{{ t }}"
+                   {% if source and t in source.themes.split(",") %}checked{% endif %}>
+            {{ t }}
+        </label>
+    {% endfor %}
+
+    <h3>Ranking (qualité de la source)</h3>
+    <select name="ranking">
+        {% for i in range(1, 6) %}
+        <option value="{{ i }}"
+            {% if source and source.source_ranking == i|string %}selected{% endif %}>
+            {{ i }}/5
+        </option>
+        {% endfor %}
+    </select>
+
+    <br><br>
+    <button type="submit" class="btn-create">
+        {% if mode == "new" %}Ajouter{% else %}Enregistrer{% endif %}
+    </button>
+
+</form>
+
+{% endblock %}

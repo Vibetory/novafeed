@@ -1,0 +1,21 @@
+name,url,domains,themes,source_ranking,ranking_author
+ADEME - Transition énergétique,https://www.ademe.fr/actualites/feed,Architecture,Carbone,5,Valentin
+Construction21 - Durable,https://www.construction21.org/fr/feed/,Architecture,Carbone,5,Valentin
+Construction21 - Innovation,https://www.construction21.org/france/feed/,Architecture,IoT,5,Valentin
+Schneider Electric Buildings Blog,https://blog.se.com/buildings/feed/,Architecture,IoT,5,Valentin
+Siemens Smart Infrastructure,https://press.siemens.com/global/en/taxonomy/term/4611/feed,Architecture,IoT,5,Valentin
+ArchDaily - Smart Buildings,https://www.archdaily.com/tag/smart-buildings/feed,Architecture,IoT,5,Valentin
+ArchDaily - Sustainability,https://www.archdaily.com/tag/sustainability/feed,Architecture,Carbone,5,Valentin
+Le Moniteur - Techniques du bâtiment,https://www.lemoniteur.fr/rss/techniques,Architecture,IoT,4,Valentin
+Dezeen - Technology,https://www.dezeen.com/technology/feed/,Architecture,IoT,4,Valentin
+Dezeen - Sustainability,https://www.dezeen.com/sustainability/feed/,Architecture,Carbone,4,Valentin
+IoT For All - Smart Buildings,https://www.iotforall.com/feed,Architecture,IoT,4,Valentin
+Smart Buildings Alliance (SBA),https://www.smartbuildingsalliance.org/feed/,Architecture,IoT,4,Valentin
+5G Americas - Infrastructure,https://www.5gamericas.org/feed/,Architecture,5G,4,Valentin
+Batirama - Smart Building,https://www.batirama.com/rss/actualites.html,Architecture,IoT,3,Valentin
+IHU - Smart Building Hub,https://ihubuildings.org/feed/,Architecture,IoT,3,Valentin
+INES - Énergie solaire & bâtiment,https://www.ines-solaire.org/rss.xml,Architecture,Carbone,3,Valentin
+Ericsson - 5G & Smart Buildings,https://www.ericsson.com/en/blog/tags/5g/rss,Architecture,5G,3,Valentin
+Peter Bjerrum (Architecte IoT – Medium),https://medium.com/feed/@peterbjerrum,Architecture,IoT,2,Valentin
+Nicolas Blain (BIM & Innovation – Medium),https://medium.com/feed/@nicolasblain,Architecture,IoT,2,Valentin
+Matthieu Rigal (Low Carbon Architecture),https://architecturenettozero.substack.com/feed,Architecture,Carbone,2,Valentin

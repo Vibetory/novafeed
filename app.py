@@ -1,319 +1,253 @@
-import csv
-import datetime
-import feedparser
-from flask import Flask, render_template, request
-from bs4 import BeautifulSoup
+from flask import Flask, render_template, request, redirect
+
+from modules.articles import (
+    load_articles_from_csv,
+    load_all_articles,
+    save_articles_to_csv,
+)
+
+from modules.feeds import (
+    get_available_domains,
+    get_available_themes,
+)
+
+from modules.filtering import filter_articles
+
+ARTICLES_CSV_PATH = "data/articles.csv"
 
 app = Flask(__name__)
 
-# -----------------------------
-# 1) FEEDS avec thème + ranking
-# -----------------------------
-RSS_FEEDS = {
-    # -----------------------
-    # IoT + Smart Buildings
-    # -----------------------
-    "ArchDaily": {
-        "url": "https://www.archdaily.com/rss",
-        "theme": "IoT",
-        "ranking": 5,
-        "ranking_author": "Valentin"
-    },
-    "Dezeen": {
-        "url": "https://www.dezeen.com/feed/",
-        "theme": "IoT",
-        "ranking": 5,
-        "ranking_author": "Valentin"
-    },
-    "AEC Magazine": {
-        "url": "https://aecmag.com/feed/",
-        "theme": "IoT",
-        "ranking": 4,
-        "ranking_author": "Valentin"
-    },
-    "Smart Buildings Magazine": {
-        "url": "https://smartbuildingsmagazine.com/feed",
-        "theme": "IoT",
-        "ranking": 4,
-        "ranking_author": "Valentin"
-    },
-    "IoT Business News": {
-        "url": "https://iotbusinessnews.com/feed/",
-        "theme": "IoT",
-        "ranking": 5,
-        "ranking_author": "Valentin"
-    },
-    "IoT Now": {
-        "url": "https://www.iot-now.com/feed",
-        "theme": "IoT",
-        "ranking": 3,
-        "ranking_author": "Valentin"
-    },
-    "BuiltWorlds": {
-        "url": "https://builtworlds.com/feed/",
-        "theme": "IoT",
-        "ranking": 4,
-        "ranking_author": "Valentin"
-    },
-    "Smart City Dive": {
-        "url": "https://www.smartcitiesdive.com/feeds/news/",
-        "theme": "IoT",
-        "ranking": 3,
-        "ranking_author": "Valentin"
-    },
-
-    # -----------------------
-    # 5G
-    # -----------------------
-    "5G.co.uk": {
-        "url": "https://www.5g.co.uk/feeds/all/",
-        "theme": "5G",
-        "ranking": 4,
-        "ranking_author": "Valentin"
-    },
-    "TelecomTV": {
-        "url": "https://www.telecomtv.com/rss",
-        "theme": "5G",
-        "ranking": 3,
-        "ranking_author": "Valentin"
-    },
-    "Ericsson Blog": {
-        "url": "https://www.ericsson.com/en/rss-feeds",
-        "theme": "5G",
-        "ranking": 4,
-        "ranking_author": "Valentin"
-    },
-    "Nokia Network Insights": {
-        "url": "https://www.nokia.com/about-us/newsroom/rss-feeds/rss-xml-feeds/",
-        "theme": "5G",
-        "ranking": 3,
-        "ranking_author": "Valentin"
-    },
-
-    # -----------------------
-    # Carbone / Green IT
-    # -----------------------
-    "CleanTechnica": {
-        "url": "https://cleantechnica.com/feed/",
-        "theme": "Carbone",
-        "ranking": 5,
-        "ranking_author": "Valentin"
-    },
-    "Inhabitat": {
-        "url": "https://inhabitat.com/feed/",
-        "theme": "Carbone",
-        "ranking": 4,
-        "ranking_author": "Valentin"
-    },
-    "GreenBiz": {
-        "url": "https://www.greenbiz.com/rss.xml",
-        "theme": "Carbone",
-        "ranking": 4,
-        "ranking_author": "Valentin"
-    },
-    "BuildingGreen": {
-        "url": "https://www.buildinggreen.com/rss.xml",
-        "theme": "Carbone",
-        "ranking": 5,
-        "ranking_author": "Valentin"
-    },
-    "Carbon Herald": {
-        "url": "https://carbonherald.com/feed/",
-        "theme": "Carbone",
-        "ranking": 3,
-        "ranking_author": "Valentin"
-    },
-    "Renewable Energy World": {
-        "url": "https://www.renewableenergyworld.com/feed/",
-        "theme": "Carbone",
-        "ranking": 4,
-        "ranking_author": "Valentin"
-    },
-
-    # -----------------------
-    # Personnalités
-    # -----------------------
-    "Carlo Ratti": {
-        "url": "https://nitter.net/carloratti/rss",
-        "theme": "IoT",
-        "ranking": 5,
-        "ranking_author": "Valentin"
-    },
-    "Norman Foster Foundation": {
-        "url": "https://www.normanfosterfoundation.org/feed/",
-        "theme": "Architecture",
-        "ranking": 4,
-        "ranking_author": "Valentin"
-    },
-    "Thomas Heatherwick": {
-        "url": "https://www.heatherwick.com/feed/",
-        "theme": "Architecture",
-        "ranking": 3,
-        "ranking_author": "Valentin"
-    }
-}
-
-# -----------------------------
-# 2) Extraction image RSS
-# -----------------------------
-
-def clean_summary(raw_html, max_length=250):
-    if not raw_html:
-        return ""
-
-    # Convertir HTML -> texte
-    text = BeautifulSoup(raw_html, "html.parser").get_text(separator=" ")
-
-    # Nettoyer les espaces multiples
-    text = " ".join(text.split())
-
-    # Tronquer si trop long
-    if len(text) > max_length:
-        text = text[:max_length].rstrip() + "…"
-
-    return text
-
-
-def extract_image(entry):
-    media = getattr(entry, "media_content", None)
-    if media and len(media) > 0 and "url" in media[0]:
-        return media[0]["url"]
-
-    thumb = getattr(entry, "media_thumbnail", None)
-    if thumb and len(thumb) > 0 and "url" in thumb[0]:
-        return thumb[0]["url"]
-
-    enclosures = getattr(entry, "enclosures", None)
-    if enclosures and len(enclosures) > 0 and "href" in enclosures[0]:
-        return enclosures[0]["href"]
-
-    return None
-
-
-# -----------------------------
-# 3) Sauvegarde CSV
-# -----------------------------
-def save_articles_to_csv(path, articles):
-    fieldnames = [
-        "id", "source", "theme", "title", "link", "published",
-        "summary", "image_url", "source_ranking", "article_ranking",
-        "ranking_author", "fetched_at"
-    ]
-
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-
-        for i, art in enumerate(articles, start=1):
-            row = art.copy()
-            row["id"] = i
-            row["fetched_at"] = datetime.datetime.utcnow().isoformat()
-            writer.writerow(row)
-
-
-# -----------------------------
-# 4) ROUTE PRINCIPALE "/"
-# -----------------------------
-@app.route('/')
+# ---------------------------------------------------------
+# HOME (chargement rapide → articles.csv)
+# ---------------------------------------------------------
+@app.route("/")
 def index():
-    articles = []
+    articles, errors = load_articles_from_csv(ARTICLES_CSV_PATH)
 
-    # Parse de toutes les sources
-    for source, meta in RSS_FEEDS.items():
-        parsed_feed = feedparser.parse(meta["url"])
+    if errors:
+        return render_template(
+            "index.html",
+            articles=[],
+            page=1,
+            total_pages=1,
+            errors=errors,
+            domains=get_available_domains(),
+            themes=get_available_themes(),
+        )
 
-        for entry in parsed_feed.entries:   
-            raw_summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
-            summary = clean_summary(raw_summary)
-            image_url = extract_image(entry)
-
-            article = {
-                "source": source,
-                "theme": meta["theme"],
-                "title": getattr(entry, "title", "Sans titre"),
-                "link": getattr(entry, "link", "#"),
-                "published": getattr(entry, "published", ""),
-                "summary": summary,
-                "image_url": image_url,
-                "source_ranking": meta["ranking"],
-                "article_ranking": meta["ranking"],
-                "ranking_author": meta["ranking_author"]
-            }
-
-            articles.append(article)
-
-    # Tri : ranking puis date
-    articles = sorted(
-        articles,
-        key=lambda x: (x["article_ranking"], x["published"]),
-        reverse=True
-    )
-
-    # Sauvegarde CSV
-    save_articles_to_csv("data/articles.csv", articles)
-
-    # Pagination
     page = request.args.get("page", 1, type=int)
     per_page = 10
-    total_articles = len(articles)
 
     start = (page - 1) * per_page
     end = start + per_page
-    paginated_articles = articles[start:end]
+    paginated = articles[start:end]
 
-    total_pages = total_articles // per_page + (1 if total_articles % per_page != 0 else 0)
+    total_pages = (len(articles) // per_page) + 1
 
     return render_template(
         "index.html",
-        articles=paginated_articles,
+        articles=paginated,
         page=page,
-        total_pages=total_pages
+        total_pages=total_pages,
+        errors=[],
+        domains=get_available_domains(),
+        themes=get_available_themes(),
     )
 
 
-# -----------------------------
-# 5) ROUTE SEARCH "/search"
-# -----------------------------
-@app.route('/search')
+# ---------------------------------------------------------
+# SEARCH
+# ---------------------------------------------------------
+@app.route("/search")
 def search():
-    query = request.args.get("q", "")
-
-    # Recharger les articles (sans repasser par le CSV)
-    articles = []
-    for source, meta in RSS_FEEDS.items():
-        parsed_feed = feedparser.parse(meta["url"])
-        for entry in parsed_feed.entries:
-            summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
-            image_url = extract_image(entry)
-
-            article = {
-                "source": source,
-                "theme": meta["theme"],
-                "title": getattr(entry, "title", "Sans titre"),
-                "link": getattr(entry, "link", "#"),
-                "published": getattr(entry, "published", ""),
-                "summary": summary,
-                "image_url": image_url,
-                "source_ranking": meta["ranking"],
-                "article_ranking": meta["ranking"],
-                "ranking_author": meta["ranking_author"]
-            }
-
-            articles.append(article)
-
+    query = request.args.get("q", "").strip().lower()
     if not query:
-        results = []
-    else:
-        results = [
-            a for a in articles
-            if query.lower() in a["title"].lower()
-        ]
+        return redirect("/")
 
-    return render_template("search_results.html", articles=results, query=query)
+    articles, errors = load_articles_from_csv(ARTICLES_CSV_PATH)
+
+    if errors:
+        return render_template(
+            "index.html",
+            articles=[],
+            page=1,
+            total_pages=1,
+            errors=errors,
+            domains=get_available_domains(),
+            themes=get_available_themes(),
+        )
+
+    results = [
+        a for a in articles
+        if query in a["title"].lower()
+        or query in a["summary"].lower()
+        or query in a["full_text"].lower()
+    ]
+
+    return render_template(
+        "index.html",
+        articles=results,
+        page=1,
+        total_pages=1,
+        search_query=query,
+        errors=[],
+        domains=get_available_domains(),
+        themes=get_available_themes(),
+    )
 
 
-# -----------------------------
-# 6) RUN
-# -----------------------------
-if __name__ == '__main__':
+# ---------------------------------------------------------
+# FILTER : domaine(s) + thèmes
+# ---------------------------------------------------------
+@app.route("/filter")
+def filter_route():
+    selected_domains = request.args.getlist("domains")
+    selected_themes = request.args.getlist("themes")
+
+    articles, errors = load_articles_from_csv(ARTICLES_CSV_PATH)
+
+    if errors:
+        return render_template(
+            "index.html",
+            articles=[],
+            page=1,
+            total_pages=1,
+            errors=errors,
+            domains=get_available_domains(),
+            themes=get_available_themes(),
+        )
+
+    filtered = filter_articles(
+        articles,
+        selected_domains or None,
+        selected_themes or None,
+    )
+
+    return render_template(
+        "index.html",
+        articles=filtered,
+        page=1,
+        total_pages=1,
+        selected_domains=selected_domains,
+        selected_themes=selected_themes,
+        errors=[],
+        domains=get_available_domains(),
+        themes=get_available_themes(),
+    )
+
+
+# ---------------------------------------------------------
+# REFRESH — recharge les RSS et régénère articles.csv
+# ---------------------------------------------------------
+@app.route("/refresh")
+def refresh():
+    articles = load_all_articles()
+    save_articles_to_csv(ARTICLES_CSV_PATH, articles)
+    return redirect("/")
+
+
+# ---------------------------------------------------------
+# SOURCE MANAGEMENT (ADD / EDIT / DELETE)
+# ---------------------------------------------------------
+from modules.feeds_editor import load_sources, add_source, update_source, delete_source
+
+@app.route("/sources")
+def manage_sources():
+    sources = load_sources()
+    return render_template(
+        "manage_sources.html",
+        sources=sources,
+        domains=get_available_domains(),
+        themes=get_available_themes(),
+    )
+
+
+@app.route("/sources/new", methods=["GET", "POST"])
+def new_source():
+    if request.method == "POST":
+        name = request.form["name"]
+        url = request.form["url"]
+
+        available_domains = get_available_domains()
+
+        # Domaine automatique s'il n'y en a qu'un
+        if len(available_domains) == 1:
+            domains = available_domains[0]
+        else:
+            domains = ",".join(request.form.getlist("domains"))
+
+        themes = ",".join(request.form.getlist("themes"))
+        ranking = request.form["ranking"]
+        author = "Valentin"
+
+        add_source({
+            "name": name,
+            "url": url,
+            "domains": domains,
+            "themes": themes,
+            "source_ranking": ranking,
+            "ranking_author": author,
+        })
+
+        return redirect("/sources")
+
+    return render_template(
+        "edit_source.html",
+        mode="new",
+        source=None,
+        domains=get_available_domains(),
+        themes=get_available_themes(),
+    )
+
+
+@app.route("/sources/edit/<int:index>", methods=["GET", "POST"])
+def edit_source(index):
+    sources = load_sources()
+    source = sources[index]
+
+    if request.method == "POST":
+        name = request.form["name"]
+        url = request.form["url"]
+
+        available_domains = get_available_domains()
+
+        if len(available_domains) == 1:
+            domains = available_domains[0]
+        else:
+            domains = ",".join(request.form.getlist("domains"))
+
+        themes = ",".join(request.form.getlist("themes"))
+        ranking = request.form["ranking"]
+
+        update_source(index, {
+            "name": name,
+            "url": url,
+            "domains": domains,
+            "themes": themes,
+            "source_ranking": ranking,
+            "ranking_author": "Valentin",
+        })
+
+        return redirect("/sources")
+
+    return render_template(
+        "edit_source.html",
+        mode="edit",
+        index=index,
+        source=source,
+        domains=get_available_domains(),
+        themes=get_available_themes(),
+    )
+
+
+@app.route("/sources/delete/<int:index>")
+def remove_source(index):
+    delete_source(index)
+    return redirect("/sources")
+
+
+# ---------------------------------------------------------
+# RUN
+# ---------------------------------------------------------
+if __name__ == "__main__":
     app.run(debug=True)
